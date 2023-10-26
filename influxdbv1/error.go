@@ -1,4 +1,4 @@
-package v2
+package influxdbhelper
 
 // this module is derrived from the mapstructure project:
 // https://github.com/mitchellh/mapstructure/error.go

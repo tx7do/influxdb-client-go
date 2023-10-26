@@ -1,4 +1,4 @@
-package v2
+package influxdbhelper
 
 import (
 	"reflect"
@@ -13,7 +13,7 @@ func TestEncodeDataNotStruct(t *testing.T) {
 	}
 }
 
-func TestEncodeSetsMeasurement(t *testing.T) {
+func TestEncodeSetsMesurment(t *testing.T) {
 	type MyType struct {
 		Val string `influx:"val"`
 	}
