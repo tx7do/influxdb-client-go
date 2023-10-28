@@ -10,19 +10,30 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-func decode(influxResult *api.QueryTableResult, result interface{}) error {
+func decode(influxResult *api.QueryTableResult, outData interface{}) error {
 	influxData := make([]map[string]interface{}, 0)
+
+	var tags []string
 
 	for influxResult.Next() {
 		//fmt.Println("*************************************************************")
 
-		//position := influxResult.TableMetadata().Position()
-		//columns := influxResult.TableMetadata().Columns()
-		record := influxResult.Record()
+		if influxResult.TableChanged() {
+			//fmt.Printf("table: %s\n", influxResult.TableMetadata().String())
+			for _, col := range influxResult.TableMetadata().Columns() {
+				//fmt.Printf("Column: %s\n", col.String())
+				if col.IsGroup() {
+					if !strings.HasPrefix(col.Name(), "_") {
+						tags = append(tags, col.Name())
+					}
+				}
+			}
+			fmt.Println("Tags:", tags)
+		}
 
-		//fmt.Println("字段：", position, columns)
+		record := influxResult.Record()
 		//fmt.Printf("Time: %v\n", record.Time())
-		//fmt.Printf("ContainerName: %v\n", record.Values())
+		//fmt.Printf("Values: %v\n", record.Values())
 		//fmt.Printf("%v: %v\n", record.Field(), record.Value())
 
 		r := make(map[string]interface{})
@@ -38,11 +49,18 @@ func decode(influxResult *api.QueryTableResult, result interface{}) error {
 
 		find := false
 		for _, d := range influxData {
-			if d["_time"].(time.Time) == record.Time() {
-				d[record.Field()] = record.Value()
-				find = true
-				break
+			if d["_time"].(time.Time) != record.Time() {
+				continue
 			}
+			for _, c := range tags {
+				if d[c] != record.ValueByKey(c) {
+					continue
+				}
+			}
+
+			d[record.Field()] = record.Value()
+			find = true
+			break
 		}
 
 		if !find {
@@ -58,7 +76,7 @@ func decode(influxResult *api.QueryTableResult, result interface{}) error {
 
 	config := &mapstructure.DecoderConfig{
 		Metadata:         nil,
-		Result:           result,
+		Result:           outData,
 		TagName:          "influx",
 		WeaklyTypedInput: false,
 		ZeroFields:       false,

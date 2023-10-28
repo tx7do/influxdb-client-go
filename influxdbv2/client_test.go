@@ -2,6 +2,7 @@ package influxdbv2
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ func TestNewInfluxClient(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
-func TestWriteData(t *testing.T) {
+func TestWriteEnv(t *testing.T) {
 	assert.NotNil(t, client)
 
 	var err error
@@ -62,6 +63,12 @@ func TestWriteData(t *testing.T) {
 	}
 	err = client.BlockWriteData(ctx, env)
 	assert.Nil(t, err)
+}
+
+func TestWriteStat(t *testing.T) {
+	assert.NotNil(t, client)
+
+	var err error
 
 	stat := Stat{
 		BasicTag: BasicTag{
@@ -76,7 +83,27 @@ func TestWriteData(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestQueryData(t *testing.T) {
+func TestQueryStat(t *testing.T) {
+	assert.NotNil(t, client)
+
+	var samplesRead []Stat
+
+	q := `
+from(bucket:"rand-buck")
+	|> range(start:-30d)
+	|> filter(fn:(r) => r._measurement == "stat")
+	|> yield(name: "_results")
+`
+	err := client.QueryData(ctx, q, &samplesRead)
+	assert.Nil(t, err)
+	fmt.Println(len(samplesRead))
+	fmt.Println(samplesRead)
+	for _, v := range samplesRead {
+		fmt.Println("Time:", v.Time, "Avg:", v.Avg, "Max:", v.Max, "Unit:", v.Unit)
+	}
+}
+
+func TestQueryEnv(t *testing.T) {
 	assert.NotNil(t, client)
 
 	var samplesRead []EnvSample
@@ -84,9 +111,14 @@ func TestQueryData(t *testing.T) {
 	q := `
 from(bucket:"rand-buck")
 	|> range(start:-30d)
-	|> filter(fn:(r) => r._measurement == "env" and r._field == "temperature" or r._field == "humidity")
+	|> filter(fn:(r) => r._measurement == "env")
 	|> yield(name: "_results")
 `
 	err := client.QueryData(ctx, q, &samplesRead)
 	assert.Nil(t, err)
+	fmt.Println(len(samplesRead))
+	fmt.Println(samplesRead)
+	for _, v := range samplesRead {
+		fmt.Println("Time:", v.Time, "Temperature:", v.Temperature, "Humidity:", v.Humidity, "Location:", v.Location)
+	}
 }

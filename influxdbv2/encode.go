@@ -26,29 +26,18 @@ func encode(d interface{}, timeField *usingValue) (ts time.Time, tags map[string
 		currField := dValue.Type().Field(i)
 		structFieldName := currField.Name
 
-		//if structFieldName == "BasicTag" {
-		fmt.Println("+++++++++++", currField.Type)
+		//fmt.Println("+++++++++++", currField.Type)
 
 		if currField.Type.Kind() == reflect.Struct {
 			for j := 0; j < currField.Type.NumField(); j++ {
 				sf := currField.Type.Field(j)
 				substructFieldName := sf.Name
-				//switch substructFieldName {
-				//case "Measurement":
-				//	measurement = f.Field(j).String()
-				//	continue
-				//case "Time":
-				//	ts = f.Field(j).Interface().(time.Time)
-				//	continue
-				//}
 
 				parseField(substructFieldName, sf, f.Field(j), timeField,
 					&ts, &tags, &fields, &measurement)
 			}
 			continue
 		}
-		//continue
-		//}
 
 		parseField(structFieldName, currField, f, timeField,
 			&ts, &tags, &fields, &measurement)
